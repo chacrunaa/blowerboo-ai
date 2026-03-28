@@ -1,9 +1,9 @@
-// Command blowerboo is the CLI entry point for the media
-// generation orchestration pipeline.
+// Команда blowerboo - это точка входа CLI для пайплайна
+// оркестрации генерации медиа.
 //
-// Usage:
+// Пример запуска:
 //
-//	blowerboo "a lone astronaut on a red desert planet at dusk"
+//	blowerboo "одинокий астронавт на красной пустынной планете в сумерках"
 package main
 
 import (
@@ -37,15 +37,15 @@ func main() {
 		CreatedAt: time.Now(),
 	}
 
-	// Wire up agents (stubs until real LLM backends are added).
+	// Подключаем агентов (заглушки, пока не добавлены реальные LLM-бэкенды).
 	specAgent := spec.New()
 	plannerAgent := planner.New()
 	executionAgent := execution.New()
 
-	// Provider registry — empty until real adapters are registered.
+	// Реестр провайдеров: пустой, пока не зарегистрированы реальные адаптеры.
 	registry := providers.NewRegistry()
 
-	// answerFn reads answers from stdin for the CLI use-case.
+	// `answerFn` читает ответы из `stdin` для CLI-сценария.
 	answerFn := func(questions []models.ClarifyingQuestion) ([]models.ClarifyingAnswer, error) {
 		scanner := bufio.NewScanner(os.Stdin)
 		answers := make([]models.ClarifyingAnswer, 0, len(questions))
@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Pretty-print the project to stdout.
+	// Красиво выводим проект в `stdout`.
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(project); err != nil {

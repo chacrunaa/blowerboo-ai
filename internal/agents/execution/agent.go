@@ -1,6 +1,6 @@
-// Package execution implements the Execution Agent, which
-// translates a Plan into provider-ready ExecutionPayloads and
-// optionally submits them via the provider registry.
+// Пакет `execution` реализует агента выполнения, который
+// преобразует `Plan` в готовые для провайдера `ExecutionPayload` и
+// при необходимости отправляет их через реестр провайдеров.
 package execution
 
 import (
@@ -12,23 +12,23 @@ import (
 	"github.com/blowerboo/blowerboo/internal/providers"
 )
 
-// Agent is the interface the orchestrator calls.
+// `Agent` - интерфейс, который вызывает оркестратор.
 type Agent interface {
-	// Format converts each Shot in the plan into an
-	// ExecutionPayload targeted at a specific provider.
-	// If no preferred provider is listed on the shot the
-	// agent picks the first registered compatible adapter.
+	// `Format` преобразует каждый `Shot` из плана в
+	// `ExecutionPayload`, нацеленный на конкретного провайдера.
+	// Если для шота не указан предпочтительный провайдер,
+	// агент выбирает первый зарегистрированный совместимый адаптер.
 	Format(ctx context.Context, plan models.Plan, spec models.Spec, registry *providers.Registry) ([]models.ExecutionPayload, error)
 
-	// Submit sends all payloads and collects results.
-	// This is a separate step so callers can inspect payloads
-	// before committing API calls.
+	// `Submit` отправляет все payload-ы и собирает результаты.
+	// Это отдельный шаг, чтобы вызывающая сторона могла проверить payload-ы
+	// до выполнения API-вызовов.
 	Submit(ctx context.Context, payloads []models.ExecutionPayload, registry *providers.Registry) ([]models.ExecutionResult, error)
 }
 
 type stubAgent struct{}
 
-// New returns a stub Agent.
+// `New` возвращает stub-агента.
 func New() Agent {
 	return &stubAgent{}
 }
@@ -53,7 +53,7 @@ func (a *stubAgent) Submit(ctx context.Context, payloads []models.ExecutionPaylo
 	for _, p := range payloads {
 		adapter, ok := registry.Get(p.Provider)
 		if !ok {
-			// Stub fallback: record as submitted without a real call.
+			// Резерв заглушки: помечаем как отправленное без реального вызова.
 			results = append(results, models.ExecutionResult{
 				ShotID:    p.ShotID,
 				Provider:  p.Provider,
@@ -63,7 +63,7 @@ func (a *stubAgent) Submit(ctx context.Context, payloads []models.ExecutionPaylo
 			})
 			continue
 		}
-		// Real adapter path — used once real providers are wired in.
+		// Путь реального адаптера: используется после подключения реальных провайдеров.
 		result, err := adapter.Submit(ctx, p)
 		if err != nil {
 			results = append(results, models.ExecutionResult{

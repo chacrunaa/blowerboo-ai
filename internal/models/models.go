@@ -3,10 +3,10 @@ package models
 import "time"
 
 // ============================================================
-// Input
+// Вход
 // ============================================================
 
-// RawPrompt is the unprocessed user input that starts the pipeline.
+// `RawPrompt` - это необработанный пользовательский ввод, который запускает пайплайн.
 type RawPrompt struct {
 	ID        string    `json:"id"`
 	Text      string    `json:"text"`
@@ -14,87 +14,87 @@ type RawPrompt struct {
 }
 
 // ============================================================
-// Spec Agent output
+// Выход агента спецификации
 // ============================================================
 
-// ClarifyingQuestion is returned by the spec agent when the
-// prompt is ambiguous. The orchestrator surfaces these to the
-// caller before continuing.
+// `ClarifyingQuestion` возвращается агентом спецификации, когда
+// промпт неоднозначен. Оркестратор отдает эти вопросы
+// вызывающей стороне перед продолжением.
 type ClarifyingQuestion struct {
 	ID       string `json:"id"`
 	Question string `json:"question"`
-	// Optional hint shown to the user alongside the question.
+	// Необязательная подсказка, которая показывается пользователю рядом с вопросом.
 	Hint string `json:"hint,omitempty"`
 }
 
-// ClarifyingAnswer pairs a user-provided answer with the
-// original question ID.
+// `ClarifyingAnswer` связывает ответ пользователя
+// с идентификатором исходного вопроса.
 type ClarifyingAnswer struct {
 	QuestionID string `json:"question_id"`
 	Answer     string `json:"answer"`
 }
 
-// Spec is the structured, validated output of the spec agent.
-// All fields are optional slices/strings so the agent can
-// populate only what the prompt supplies.
+// `Spec` - структурированный и валидированный результат работы агента спецификации.
+// Все поля - необязательные срезы/строки, чтобы агент
+// заполнял только то, что есть в промпте.
 type Spec struct {
 	ID       string `json:"id"`
 	PromptID string `json:"prompt_id"`
 
-	// Narrative / content
+	// Нарратив / контент
 	Characters  []string `json:"characters,omitempty"`
 	Environment string   `json:"environment,omitempty"`
 	Mood        string   `json:"mood,omitempty"`
 	Narrative   string   `json:"narrative,omitempty"`
 
-	// Visual direction
+	// Визуальное направление
 	Style        string   `json:"style,omitempty"`
 	ColorPalette []string `json:"color_palette,omitempty"`
 	Lighting     string   `json:"lighting,omitempty"`
-	References   []string `json:"references,omitempty"` // URLs or descriptions
+	References   []string `json:"references,omitempty"` // URL-адреса или описания
 
-	// Camera & motion
+	// Камера и движение
 	CameraAngle     string `json:"camera_angle,omitempty"`
 	CameraMotion    string `json:"camera_motion,omitempty"`
-	MotionIntensity string `json:"motion_intensity,omitempty"` // e.g. "subtle", "dynamic"
+	MotionIntensity string `json:"motion_intensity,omitempty"` // например: "subtle", "dynamic"
 
-	// Output
+	// Выходные параметры
 	OutputFormat string `json:"output_format"`           // "image" | "video" | "sequence"
-	AspectRatio  string `json:"aspect_ratio,omitempty"`  // e.g. "16:9", "9:16", "1:1"
-	DurationSec  int    `json:"duration_sec,omitempty"`  // for video
+	AspectRatio  string `json:"aspect_ratio,omitempty"`  // например: "16:9", "9:16", "1:1"
+	DurationSec  int    `json:"duration_sec,omitempty"`  // для видео
 
-	// Restrictions / negative prompts
+	// Ограничения / негативные промпты
 	Restrictions []string `json:"restrictions,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 }
 
 // ============================================================
-// Planner Agent output
+// Выход агента планирования
 // ============================================================
 
-// Shot represents a single atomic media generation unit.
-// A plan is composed of one or more shots.
+// `Shot` представляет одну атомарную единицу генерации медиа.
+// План состоит из одного или нескольких шотов.
 type Shot struct {
 	ID          string `json:"id"`
 	Order       int    `json:"order"`
 	Description string `json:"description"`
 
-	// Each shot inherits or overrides from the parent Spec.
+	// Каждый шот наследует или переопределяет параметры родительского `Spec`.
 	Style        string   `json:"style,omitempty"`
 	CameraAngle  string   `json:"camera_angle,omitempty"`
 	CameraMotion string   `json:"camera_motion,omitempty"`
 	DurationSec  int      `json:"duration_sec,omitempty"`
 	Tags         []string `json:"tags,omitempty"`
 
-	// Which provider(s) are preferred for this shot.
-	// Empty means "any compatible provider".
+	// Какие провайдеры предпочтительны для этого шота.
+	// Пусто означает "любой совместимый провайдер".
 	PreferredProviders []string `json:"preferred_providers,omitempty"`
 }
 
-// Plan is the structured execution blueprint produced by the
-// planner agent. It contains an ordered list of shots and any
-// cross-shot notes.
+// `Plan` - структурированный план выполнения, который формирует
+// агент планирования. Он содержит упорядоченный список шотов и
+// общие заметки между шотами.
 type Plan struct {
 	ID     string `json:"id"`
 	SpecID string `json:"spec_id"`
@@ -106,53 +106,53 @@ type Plan struct {
 }
 
 // ============================================================
-// Execution Agent output
+// Выход агента выполнения
 // ============================================================
 
-// ExecutionPayload is the provider-agnostic envelope the
-// execution agent produces for each shot. The provider adapter
-// translates this into the provider's native API request.
+// `ExecutionPayload` - это независимая от провайдера обертка,
+// которую агент выполнения создает для каждого шота. Адаптер провайдера
+// переводит ее в нативный API-запрос провайдера.
 type ExecutionPayload struct {
 	ShotID   string `json:"shot_id"`
-	Provider string `json:"provider"` // e.g. "kling", "runway", "midjourney"
+	Provider string `json:"provider"` // например: "kling", "runway", "midjourney"
 
-	// Resolved prompt text ready for the provider.
+	// Готовый текст промпта для провайдера.
 	Prompt         string `json:"prompt"`
 	NegativePrompt string `json:"negative_prompt,omitempty"`
 
-	// Provider-agnostic parameters
+	// Параметры, независимые от провайдера
 	AspectRatio string `json:"aspect_ratio,omitempty"`
 	DurationSec int    `json:"duration_sec,omitempty"`
 	Style       string `json:"style,omitempty"`
 
-	// Escape hatch: provider-specific overrides that don't fit
-	// the generic fields above. The adapter reads from this map.
+	// Запасной путь: специфичные для провайдера переопределения,
+	// которые не укладываются в общие поля выше. Адаптер читает их из этой `map`.
 	ProviderParams map[string]any `json:"provider_params,omitempty"`
 }
 
-// ExecutionResult captures what came back from the provider
-// after submitting a payload.
+// `ExecutionResult` содержит результат, который вернулся от провайдера
+// после отправки payload-а.
 type ExecutionResult struct {
 	ShotID   string `json:"shot_id"`
 	Provider string `json:"provider"`
 
-	// JobID is the async job reference returned by the provider.
-	// Empty when the result is synchronous.
+	// `JobID` - ссылка на асинхронную задачу, возвращенная провайдером.
+	// Пусто, если результат синхронный.
 	JobID  string `json:"job_id,omitempty"`
 	Status string `json:"status"` // "submitted" | "completed" | "failed"
 
-	// OutputURL is populated once the asset is ready.
+	// `OutputURL` заполняется, когда ассет готов.
 	OutputURL string    `json:"output_url,omitempty"`
 	Error     string    `json:"error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 // ============================================================
-// Pipeline envelope
+// Обертка пайплайна
 // ============================================================
 
-// Project is the top-level container that tracks a single
-// end-to-end run of the pipeline. Useful for persisting state.
+// `Project` - это верхнеуровневый контейнер, который отслеживает
+// один сквозной прогон пайплайна. Удобен для сохранения состояния.
 type Project struct {
 	ID   string `json:"id"`
 	Name string `json:"name,omitempty"`
@@ -162,7 +162,7 @@ type Project struct {
 	Plan    *Plan            `json:"plan,omitempty"`
 	Results []ExecutionResult `json:"results,omitempty"`
 
-	// Questions asked during spec phase and their answers.
+	// Вопросы, заданные на этапе спецификации, и ответы на них.
 	Questions []ClarifyingQuestion `json:"questions,omitempty"`
 	Answers   []ClarifyingAnswer   `json:"answers,omitempty"`
 

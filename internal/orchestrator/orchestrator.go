@@ -1,10 +1,10 @@
-// Package orchestrator coordinates the three agents in
-// sequence: raw prompt → spec (with optional Q&A) → plan →
-// execution payloads → results.
+// Пакет `orchestrator` координирует трех агентов в
+// последовательности: сырой промпт -> спецификация (с опциональными уточнениями) -> план ->
+// payload-ы выполнения -> результаты.
 //
-// The orchestrator does NOT contain business logic. It is
-// purely a call sequencer that passes data structures between
-// agents and records state into a Project.
+// Оркестратор НЕ содержит бизнес-логику. Это
+// только секвенсор вызовов, который передает структуры данных между
+// агентами и записывает состояние в `Project`.
 package orchestrator
 
 import (
@@ -19,27 +19,27 @@ import (
 	"github.com/blowerboo/blowerboo/internal/providers"
 )
 
-// AnswerFunc is called by the orchestrator when the spec agent
-// returns clarifying questions. The caller provides answers
-// (e.g. via CLI prompt, HTTP handler, or a test fixture).
-// Return nil to abort the pipeline.
+// `AnswerFunc` вызывается оркестратором, когда spec-агент
+// возвращает уточняющие вопросы. Вызывающая сторона передает ответы
+// (например, через CLI-промпт, HTTP-обработчик или тестовую фикстуру).
+// Верните `nil`, чтобы прервать пайплайн.
 type AnswerFunc func(questions []models.ClarifyingQuestion) ([]models.ClarifyingAnswer, error)
 
-// Orchestrator sequences the pipeline agents.
+// `Orchestrator` задает последовательность агентов пайплайна.
 type Orchestrator struct {
 	specAgent      spec.Agent
 	plannerAgent   planner.Agent
 	executionAgent execution.Agent
 	registry       *providers.Registry
 
-	// answerFn is how the orchestrator surfaces clarifying
-	// questions to whoever is driving the pipeline. Callers
-	// inject their own implementation (CLI, HTTP, test stub).
+	// `answerFn` - способ, которым оркестратор отдает уточняющие
+	// вопросы тому, кто запускает пайплайн. Вызывающие стороны
+	// подставляют свою реализацию (CLI, HTTP, тестовая заглушка).
 	answerFn AnswerFunc
 }
 
-// New constructs an Orchestrator. All dependencies are
-// required; pass stub implementations during development.
+// `New` создает `Orchestrator`. Все зависимости
+// обязательны; в разработке передавайте заглушки.
 func New(
 	specAgent spec.Agent,
 	plannerAgent planner.Agent,
@@ -56,9 +56,9 @@ func New(
 	}
 }
 
-// Run executes the full pipeline for the given raw prompt and
-// returns a populated Project. The project records every
-// intermediate artifact so callers can inspect or persist it.
+// `Run` выполняет полный пайплайн для заданного сырого промпта и
+// возвращает заполненный `Project`. Проект хранит все
+// промежуточные артефакты, чтобы их можно было просмотреть или сохранить.
 func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (models.Project, error) {
 	project := models.Project{
 		ID:        fmt.Sprintf("proj-%d", time.Now().UnixNano()),
@@ -68,7 +68,7 @@ func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (mod
 		UpdatedAt: time.Now(),
 	}
 
-	// ── Step 1: Clarify ──────────────────────────────────────
+	// -- Шаг 1: Уточнение ---------------------------------------
 	questions, err := o.specAgent.Clarify(ctx, rawPrompt)
 	if err != nil {
 		return project, fmt.Errorf("spec clarify: %w", err)
@@ -91,7 +91,7 @@ func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (mod
 		project.UpdatedAt = time.Now()
 	}
 
-	// ── Step 2: Build Spec ───────────────────────────────────
+	// -- Шаг 2: Построение спецификации --------------------------
 	builtSpec, err := o.specAgent.Build(ctx, rawPrompt, answers)
 	if err != nil {
 		return project, fmt.Errorf("spec build: %w", err)
@@ -100,7 +100,7 @@ func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (mod
 	project.Status = "planning"
 	project.UpdatedAt = time.Now()
 
-	// ── Step 3: Plan ─────────────────────────────────────────
+	// -- Шаг 3: Планирование ------------------------------------
 	plan, err := o.plannerAgent.Plan(ctx, builtSpec)
 	if err != nil {
 		return project, fmt.Errorf("planner: %w", err)
@@ -109,13 +109,13 @@ func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (mod
 	project.Status = "executing"
 	project.UpdatedAt = time.Now()
 
-	// ── Step 4: Format payloads ──────────────────────────────
+	// -- Шаг 4: Формирование payload-ов -------------------------
 	payloads, err := o.executionAgent.Format(ctx, plan, builtSpec, o.registry)
 	if err != nil {
 		return project, fmt.Errorf("execution format: %w", err)
 	}
 
-	// ── Step 5: Submit ───────────────────────────────────────
+	// -- Шаг 5: Отправка ----------------------------------------
 	results, err := o.executionAgent.Submit(ctx, payloads, o.registry)
 	if err != nil {
 		return project, fmt.Errorf("execution submit: %w", err)
