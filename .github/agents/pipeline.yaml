@@ -1,0 +1,34 @@
+name: pipeline
+description: >
+  Единый агент-оркестратор для Copilot Chat.
+  За один запуск проходит этапы spec -> planner -> executor:
+  уточняет критичные поля, сохраняет spec.md, затем plan.md и prompts.md
+  в одной папке проекта.
+model: gpt-4o
+tools:
+  - filesystem
+  - editor
+input:
+  type: raw_prompt
+  source: user_message
+output:
+  directory: projects/{timestamp}
+  files:
+    - spec.md
+    - plan.md
+    - prompts.md
+language: ru
+language_note: >
+  Все сообщения и все выходные файлы — только на русском языке.
+critical_fields:
+  - output_format
+  - aspect_ratio
+  - characters
+  - environment
+  - mood
+  - style
+max_clarifying_questions: 5
+stub: true
+note: >
+  Агент не делает внешних API-вызовов.
+  Он только формирует артефакты planning/exec в markdown.

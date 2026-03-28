@@ -21,10 +21,11 @@ import (
 	"github.com/blowerboo/blowerboo/internal/models"
 	"github.com/blowerboo/blowerboo/internal/orchestrator"
 	"github.com/blowerboo/blowerboo/internal/providers"
-	"github.com/blowerboo/blowerboo/internal/providers/kling"
 )
 
 func main() {
+	loadDotEnv()
+
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "usage: blowerboo <prompt>")
 		os.Exit(1)
@@ -38,31 +39,26 @@ func main() {
 		CreatedAt: time.Now(),
 	}
 
-	// Подключаем агентов (заглушки, пока не добавлены реальные LLM-бэкенды).
-	specAgent := spec.New()
+	// LLM-оркестрация перенесена на Copilot-агентов (.github/agents/).
+	// Go CLI работает со stub-реализациями для локального тестирования структуры.
+	var specAgent spec.Agent = spec.New()
+
 	plannerAgent := planner.New()
 	executionAgent := execution.New()
 
+	// Kling и другие провайдеры отключены — фокус на отладке Spec Agent.
 	registry := providers.NewRegistry()
-
-	// Регистрируем Kling, если в окружении есть учётные данные.
-	// Если переменных нет — провайдер просто отключён, пайплайн продолжает работу.
-	if klingAdapter, err := kling.NewFromEnv(); err != nil {
-		fmt.Fprintf(os.Stderr, "kling provider disabled: %v\n", err)
-	} else {
-		registry.Register(klingAdapter)
-	}
 
 	// `answerFn` читает ответы из `stdin` для CLI-сценария.
 	answerFn := func(questions []models.ClarifyingQuestion) ([]models.ClarifyingAnswer, error) {
 		scanner := bufio.NewScanner(os.Stdin)
 		answers := make([]models.ClarifyingAnswer, 0, len(questions))
 		for _, q := range questions {
-			fmt.Printf("\nQuestion: %s\n", q.Question)
+			fmt.Printf("\n%s\n", q.Question)
 			if q.Hint != "" {
-				fmt.Printf("Hint: %s\n", q.Hint)
+				fmt.Printf("(%s)\n", q.Hint)
 			}
-			fmt.Print("Answer: ")
+			fmt.Print("> ")
 			if scanner.Scan() {
 				answers = append(answers, models.ClarifyingAnswer{
 					QuestionID: q.ID,
@@ -88,5 +84,34 @@ func main() {
 	if err := enc.Encode(project); err != nil {
 		fmt.Fprintf(os.Stderr, "encode error: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+// loadDotEnv читает .env из рабочей директории и устанавливает переменные окружения.
+// Не перезаписывает уже установленные переменные (os.Setenv имеет приоритет ниже shell).
+// Молча пропускает отсутствующий файл.
+func loadDotEnv() {
+	f, err := os.Open(".env")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, val, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		val = strings.TrimSpace(val)
+		val = strings.Trim(val, `"'`)
+		if os.Getenv(key) == "" {
+			_ = os.Setenv(key, val)
+		}
 	}
 }

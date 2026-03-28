@@ -1,0 +1,30 @@
+name: planner
+description: >
+  Агент планирования. Читает готовую спецификацию из spec.md,
+  разбивает её на упорядоченный список shots и сохраняет план
+  в файл рядом со спецификацией.
+model: gpt-4o
+tools:
+  - filesystem
+  - editor
+input:
+  type: spec_file
+  source: projects/{id}/spec.md
+output:
+  directory: projects/{id}
+  file: plan.md
+next_agent: executor
+next_agent_note: >
+  Поле справочное: Copilot Chat не переключает агента автоматически.
+  Для бесшовного сценария используйте @pipeline.
+language: ru
+language_note: >
+  Все сообщения и содержимое plan.md — только на русском языке.
+shot_fields:
+  - index        # порядковый номер
+  - description  # что происходит в кадре
+  - style        # визуальный стиль
+  - camera       # тип камеры, угол, движение
+  - duration     # длительность в секундах (для video)
+  - provider     # целевой провайдер (kling | runway | midjourney)
+  - notes        # дополнительные технические пометки

@@ -1,0 +1,38 @@
+name: spec
+description: >
+  Агент сбора требований. Принимает сырой промпт от пользователя,
+  задаёт уточняющие вопросы по критическим полям, формирует
+  структурированную спецификацию и сохраняет её в файл.
+model: gpt-4o
+tools:
+  - filesystem
+  - editor
+input:
+  type: raw_prompt
+  source: user_message
+output:
+  directory: projects/{timestamp}
+  file: spec.md
+next_agent: planner
+next_agent_note: >
+  Поле справочное: Copilot Chat не переключает агента автоматически.
+  Для бесшовного сценария используйте @pipeline.
+critical_fields:
+  - output_format   # image | video | sequence
+  - aspect_ratio    # 16:9 | 9:16 | 1:1
+  - characters
+  - environment
+  - mood
+  - style
+optional_fields:
+  - camera_work
+  - lighting
+  - color_palette
+  - references
+  - restrictions
+  - duration
+  - motion
+max_clarifying_questions: 5
+language: ru
+language_note: >
+  Все уточняющие вопросы, ответы и содержимое spec.md — только на русском языке.

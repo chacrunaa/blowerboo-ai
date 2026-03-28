@@ -1,0 +1,30 @@
+name: executor
+description: >
+  Агент-исполнитель (заглушка). Читает plan.md, для каждого shot
+  форматирует готовый текстовый промпт под конкретный внешний сервис
+  (Kling, Runway и т.д.) и сохраняет результат в prompts.md.
+  Не делает API-вызовов — только форматирует и сохраняет текст.
+model: gpt-4o
+tools:
+  - filesystem
+  - editor
+input:
+  type: plan_file
+  source: projects/{id}/plan.md
+output:
+  directory: projects/{id}
+  file: prompts.md
+stub: true
+note: >
+  Executor намеренно не интегрируется с внешними API.
+  Его задача — подготовить промпты в правильном формате
+  для ручной передачи или будущей автоматизации.
+language: ru
+language_note: >
+  Все сообщения и промпты в prompts.md — только на русском языке.
+supported_providers:
+  - kling
+  - runway
+  - midjourney
+  - leonardo
+  - stable_diffusion
