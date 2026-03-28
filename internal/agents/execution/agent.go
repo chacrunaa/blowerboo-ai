@@ -1,4 +1,4 @@
-// Пакет `execution` реализует агента выполнения, который
+// execution реализует агента выполнения, который
 // преобразует `Plan` в готовые для провайдера `ExecutionPayload` и
 // при необходимости отправляет их через реестр провайдеров.
 package execution
@@ -12,15 +12,15 @@ import (
 	"github.com/blowerboo/blowerboo/internal/providers"
 )
 
-// `Agent` - интерфейс, который вызывает оркестратор.
+// Agent - интерфейс, который вызывает оркестратор.
 type Agent interface {
-	// `Format` преобразует каждый `Shot` из плана в
+	// Format преобразует каждый `Shot` из плана в
 	// `ExecutionPayload`, нацеленный на конкретного провайдера.
 	// Если для шота не указан предпочтительный провайдер,
 	// агент выбирает первый зарегистрированный совместимый адаптер.
 	Format(ctx context.Context, plan models.Plan, spec models.Spec, registry *providers.Registry) ([]models.ExecutionPayload, error)
 
-	// `Submit` отправляет все payload-ы и собирает результаты.
+	// Submit отправляет все payload-ы и собирает результаты.
 	// Это отдельный шаг, чтобы вызывающая сторона могла проверить payload-ы
 	// до выполнения API-вызовов.
 	Submit(ctx context.Context, payloads []models.ExecutionPayload, registry *providers.Registry) ([]models.ExecutionResult, error)
@@ -28,7 +28,7 @@ type Agent interface {
 
 type stubAgent struct{}
 
-// `New` возвращает stub-агента.
+// New возвращает stub-агента.
 func New() Agent {
 	return &stubAgent{}
 }
@@ -38,7 +38,7 @@ func (a *stubAgent) Format(_ context.Context, plan models.Plan, spec models.Spec
 	for _, shot := range plan.Shots {
 		payloads = append(payloads, models.ExecutionPayload{
 			ShotID:      shot.ID,
-			Provider:    "stub",
+			Provider:    "kling",
 			Prompt:      shot.Description,
 			AspectRatio: spec.AspectRatio,
 			DurationSec: shot.DurationSec,

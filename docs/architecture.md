@@ -1,14 +1,14 @@
-# Architecture
+# Архитектура
 
-## Pipeline
+## Пайплайн
 
 ```
 RawPrompt
     │
     ▼
-SpecAgent.Clarify()       ← may surface ClarifyingQuestions to caller
+SpecAgent.Clarify()       ← может отдать ClarifyingQuestions вызывающей стороне
     │
-    ▼ (answers injected)
+    ▼ (ответы переданы внутрь)
 SpecAgent.Build()         → Spec
     │
     ▼
@@ -24,31 +24,31 @@ ExecutionAgent.Submit()   → []ExecutionResult
 Project (persisted)
 ```
 
-## Key Design Decisions
+## Ключевые архитектурные решения
 
-### No shared Agent interface
-Each agent package exports its own interface. This prevents the temptation of
-a bloated shared interface that all agents must satisfy even when a method
-makes no sense for them.
+### Нет общего интерфейса Agent
+Каждый пакет агента экспортирует свой собственный интерфейс. Это убирает
+соблазн сделать раздутый общий интерфейс, который обязаны реализовывать
+все агенты, даже когда часть методов им не нужна.
 
-### Orchestrator is a concrete struct, not an interface
-The orchestrator is constructed once in main.go and wired together. Interfaces
-are introduced only if alternate orchestration strategies (batch, streaming,
-async) are needed. Premature interface extraction here would just add noise.
+### Оркестратор — конкретная структура, а не интерфейс
+Оркестратор создается один раз в `main.go` и связывается с зависимостями.
+Интерфейсы вводятся только если нужны альтернативные стратегии оркестрации
+(batch, streaming, async). Преждевременное выделение интерфейса здесь лишь
+добавит шум.
 
-### AnswerFunc for Q&A
-The spec agent may ask questions. The orchestrator doesn't know whether it's
-running in a CLI, HTTP server, or test harness, so it delegates to an
-injected function. This keeps each layer testable without building a full
-integration harness.
+### `AnswerFunc` для Q&A
+Spec-агент может задавать вопросы. Оркестратор не знает, в каком окружении
+он работает (CLI, HTTP-сервер или тестовый harness), поэтому делегирует это
+внедренной функции. Так каждый слой остается тестируемым без полноценного
+интеграционного стенда.
 
-### ExecutionPayload as a translation boundary
-The execution agent produces a provider-agnostic payload. Each provider
-adapter is responsible for translating that into its own API shape. This
-means the spec and planner agents never need to know which provider will
-handle a shot.
+### `ExecutionPayload` как граница трансляции
+Execution-агент формирует payload, независимый от провайдера. Каждый адаптер
+провайдера сам преобразует его в формат своего API. Благодаря этому
+spec- и planner-агенты не должны знать, какой провайдер обработает шот.
 
-### Registry over factory
-The provider registry is a flat map. Adding a new provider is one line in
-main.go: `registry.Register(mykling.New(apiKey))`. No factory patterns,
-no reflection, no plugin system.
+### Реестр вместо фабрики
+Реестр провайдеров — это плоская `map`. Добавление нового провайдера — одна
+строка в `main.go`: `registry.Register(mykling.New(apiKey))`. Без фабричных
+паттернов, без рефлексии, без плагинной системы.

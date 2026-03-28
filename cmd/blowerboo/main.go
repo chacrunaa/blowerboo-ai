@@ -21,6 +21,7 @@ import (
 	"github.com/blowerboo/blowerboo/internal/models"
 	"github.com/blowerboo/blowerboo/internal/orchestrator"
 	"github.com/blowerboo/blowerboo/internal/providers"
+	"github.com/blowerboo/blowerboo/internal/providers/kling"
 )
 
 func main() {
@@ -42,8 +43,15 @@ func main() {
 	plannerAgent := planner.New()
 	executionAgent := execution.New()
 
-	// Реестр провайдеров: пустой, пока не зарегистрированы реальные адаптеры.
 	registry := providers.NewRegistry()
+
+	// Регистрируем Kling, если в окружении есть учётные данные.
+	// Если переменных нет — провайдер просто отключён, пайплайн продолжает работу.
+	if klingAdapter, err := kling.NewFromEnv(); err != nil {
+		fmt.Fprintf(os.Stderr, "kling provider disabled: %v\n", err)
+	} else {
+		registry.Register(klingAdapter)
+	}
 
 	// `answerFn` читает ответы из `stdin` для CLI-сценария.
 	answerFn := func(questions []models.ClarifyingQuestion) ([]models.ClarifyingAnswer, error) {

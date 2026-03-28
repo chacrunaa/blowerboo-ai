@@ -67,6 +67,8 @@ git clone https://github.com/blowerboo/blowerboo
 cd blowerboo
 cp .env.example .env
 # fill in your API keys
+# NOTE: CODEX_API_KEY is optional for now and reserved for a future
+# Codex/OpenAI-backed implementation of Spec/Planner agents.
 
 go run ./cmd/blowerboo "a lone astronaut on a red desert planet at dusk"
 ```

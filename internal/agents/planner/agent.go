@@ -1,4 +1,4 @@
-// Пакет `planner` реализует агента планирования, который преобразует
+// Пакет planner реализует агента планирования, который преобразует
 // структурированный `Spec` в упорядоченный список шотов (`Plan`).
 package planner
 
@@ -9,16 +9,16 @@ import (
 	"github.com/blowerboo/blowerboo/internal/models"
 )
 
-// `Agent` - интерфейс, который вызывает оркестратор.
+// Agent - интерфейс, который вызывает оркестратор.
 type Agent interface {
-	// `Plan` принимает финализированный `Spec` и возвращает `Plan`
+	// Plan принимает финализированный `Spec` и возвращает `Plan`
 	// с упорядоченным списком `Shot`.
 	Plan(ctx context.Context, spec models.Spec) (models.Plan, error)
 }
 
 type stubAgent struct{}
 
-// `New` возвращает stub-агента.
+// New возвращает stub-агента.
 func New() Agent {
 	return &stubAgent{}
 }

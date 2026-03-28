@@ -11,16 +11,16 @@ import (
 	"github.com/blowerboo/blowerboo/internal/models"
 )
 
-// `Agent` - интерфейс, который вызывает оркестратор.
+// Agent - интерфейс, который вызывает оркестратор.
 // Локальное размещение в этом пакете означает, что оркестратор
 // зависит от этого интерфейса, а не от общего "мега-интерфейса".
 type Agent interface {
-	// `Clarify` анализирует промпт и возвращает вопросы,
+	// Clarify анализирует промпт и возвращает вопросы,
 	// ответы на которые нужны агенту до построения `Spec`.
 	// Возвращает пустой срез, если промпт достаточно ясен.
 	Clarify(ctx context.Context, prompt models.RawPrompt) ([]models.ClarifyingQuestion, error)
 
-	// `Build` создает структурированный `Spec` из промпта и
+	// Build создает структурированный `Spec` из промпта и
 	// ответов на ранее заданные уточняющие вопросы.
 	Build(ctx context.Context, prompt models.RawPrompt, answers []models.ClarifyingAnswer) (models.Spec, error)
 }

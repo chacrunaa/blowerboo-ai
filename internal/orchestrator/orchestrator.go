@@ -36,6 +36,14 @@ type Orchestrator struct {
 	// вопросы тому, кто запускает пайплайн. Вызывающие стороны
 	// подставляют свою реализацию (CLI, HTTP, тестовая заглушка).
 	answerFn AnswerFunc
+
+	// PollInterval — пауза между запросами статуса асинхронных задач.
+	// Ноль означает использование значения по умолчанию (5 секунд).
+	PollInterval time.Duration
+
+	// PollTimeout — максимальное суммарное время ожидания всех задач.
+	// Ноль означает использование значения по умолчанию (10 минут).
+	PollTimeout time.Duration
 }
 
 // `New` создает `Orchestrator`. Все зависимости
@@ -120,9 +128,75 @@ func (o *Orchestrator) Run(ctx context.Context, rawPrompt models.RawPrompt) (mod
 	if err != nil {
 		return project, fmt.Errorf("execution submit: %w", err)
 	}
+
+	// -- Шаг 6: Polling до получения output_url ------------------
+	results, err = o.pollUntilDone(ctx, results)
+	if err != nil {
+		return project, fmt.Errorf("polling: %w", err)
+	}
+
 	project.Results = results
 	project.Status = "done"
 	project.UpdatedAt = time.Now()
 
 	return project, nil
+}
+
+// pollUntilDone периодически запрашивает статус задач со статусом "submitted"
+// до тех пор, пока все они не перейдут в "completed" или "failed".
+// Задачи без зарегистрированного адаптера (заглушки) пропускаются.
+func (o *Orchestrator) pollUntilDone(ctx context.Context, results []models.ExecutionResult) ([]models.ExecutionResult, error) {
+	interval := o.PollInterval
+	if interval == 0 {
+		interval = 5 * time.Second
+	}
+	timeout := o.PollTimeout
+	if timeout == 0 {
+		timeout = 10 * time.Minute
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		// Считаем задачи, которые реально можно дождаться.
+		pending := 0
+		for _, r := range results {
+			if r.Status == "submitted" && r.JobID != "" {
+				if _, ok := o.registry.Get(r.Provider); ok {
+					pending++
+				}
+			}
+		}
+		if pending == 0 {
+			return results, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return results, fmt.Errorf("timed out waiting for %d job(s): %w", pending, ctx.Err())
+		case <-ticker.C:
+			for i, r := range results {
+				if r.Status != "submitted" || r.JobID == "" {
+					continue
+				}
+				adapter, ok := o.registry.Get(r.Provider)
+				if !ok {
+					continue
+				}
+				updated, err := adapter.Status(ctx, r.JobID)
+				if err != nil {
+					results[i].Status = "failed"
+					results[i].Error = err.Error()
+					continue
+				}
+				shotID := r.ShotID // Status() не знает ShotID — сохраняем
+				results[i] = updated
+				results[i].ShotID = shotID
+			}
+		}
+	}
 }
