@@ -1,37 +1,37 @@
 # blowerboo
 
-A minimal orchestration layer for AI media generation. Give it a prompt; get back structured, provider-ready payloads for images and video.
+Минималистичный слой оркестрации для AI-генерации медиа. Вы даете промпт, на выходе получаете структурированные payload-ы, готовые для провайдеров изображений и видео.
 
 ---
 
-## What it does
+## Что делает проект
 
-blowerboo runs a three-agent pipeline:
+blowerboo запускает пайплайн из трех агентов:
 
-1. **Spec Agent** — reads your raw prompt, identifies ambiguities, asks clarifying questions, and produces a structured creative spec (characters, environment, color palette, camera direction, output format, etc.).
-2. **Planner Agent** — takes the spec and creates an ordered shot list. A single prompt may decompose into multiple shots (e.g. a title card, three scene shots, an outro).
-3. **Execution Agent** — translates each shot into provider-ready API payloads and submits them to the configured media generation service (Kling, Runway, Midjourney, Leonardo, etc.).
+1. **Spec Agent** — читает ваш исходный промпт, находит неоднозначности, задает уточняющие вопросы и формирует структурированную креативную спецификацию (персонажи, окружение, цветовая палитра, работа камеры, формат вывода и т.д.).
+2. **Planner Agent** — берет спецификацию и строит упорядоченный список шотов. Один промпт может быть разбит на несколько шотов (например: титульный кадр, три сценовых шота, финальный кадр).
+3. **Execution Agent** — преобразует каждый шот в payload для API провайдера и отправляет его в настроенный сервис генерации медиа (Kling, Runway, Midjourney, Leonardo и т.д.).
 
 ---
 
-## Workflow
+## Рабочий процесс
 
 ```
-you: "a lone astronaut on a red desert planet at dusk"
+вы: "одинокий астронавт на красной пустынной планете в сумерках"
          │
          ▼
   [ Spec Agent ]
-  - clarifying questions (style? aspect ratio? mood?)
-  - structured spec: environment, camera, palette, format
+  - уточняющие вопросы (стиль? соотношение сторон? настроение?)
+  - структурированная спецификация: окружение, камера, палитра, формат
          │
          ▼
   [ Planner Agent ]
-  - shot list: [establishing wide shot, close-up visor reflection, pull-back reveal]
+  - список шотов: [общий установочный план, крупный план отражения в визоре, отъезд с раскрытием сцены]
          │
          ▼
   [ Execution Agent ]
-  - payload for each shot → Kling / Runway / Midjourney
-  - returns job IDs and output URLs
+  - payload для каждого шота → Kling / Runway / Midjourney
+  - возвращает ID задач и URL результатов
          │
          ▼
   ./projects/<project-id>/results.json
@@ -39,20 +39,20 @@ you: "a lone astronaut on a red desert planet at dusk"
 
 ---
 
-## Directory Structure
+## Структура директорий
 
 ```
 blowerboo/
-├── cmd/blowerboo/        # CLI entry point
+├── cmd/blowerboo/        # Точка входа CLI
 ├── internal/
 │   ├── agents/spec/      # Spec Agent
 │   ├── agents/planner/   # Planner Agent
 │   ├── agents/execution/ # Execution Agent
-│   ├── models/           # All shared data structs (DTOs)
-│   ├── orchestrator/     # Pipeline coordinator
-│   └── providers/        # Provider adapter interface + registry
-├── projects/             # Per-run output (gitignored)
-├── docs/                 # Architecture notes
+│   ├── models/           # Все общие структуры данных (DTO)
+│   ├── orchestrator/     # Координатор пайплайна
+│   └── providers/        # Интерфейс адаптеров провайдеров + реестр
+├── projects/             # Выходные данные по каждому запуску (игнорируется git)
+├── docs/                 # Заметки по архитектуре
 ├── .env.example
 ├── go.mod
 └── README.md
@@ -60,85 +60,84 @@ blowerboo/
 
 ---
 
-## Quick Start
+## Быстрый старт
 
 ```bash
 git clone https://github.com/blowerboo/blowerboo
 cd blowerboo
 cp .env.example .env
-# fill in your API keys
-# NOTE: CODEX_API_KEY is optional for now and reserved for a future
-# Codex/OpenAI-backed implementation of Spec/Planner agents.
+# заполните API-ключи
+# ПРИМЕЧАНИЕ: CODEX_API_KEY пока опционален и зарезервирован
+# для будущей реализации Spec/Planner агентов на Codex/OpenAI.
 
-go run ./cmd/blowerboo "a lone astronaut on a red desert planet at dusk"
+go run ./cmd/blowerboo "одинокий астронавт на красной пустынной планете в сумерках"
 ```
 
-The pipeline runs with stub agents by default. Real LLM-backed agents and
-provider adapters are added by implementing the interfaces in each `agents/`
-package.
+По умолчанию пайплайн работает на stub-агентах. Реальные LLM-агенты и
+адаптеры провайдеров добавляются через реализацию интерфейсов в пакетах `agents/`.
 
 ---
 
-## Adding a Provider
+## Добавление нового провайдера
 
-Implement the `providers.Adapter` interface and register it in `main.go`:
+Реализуйте интерфейс `providers.Adapter` и зарегистрируйте его в `main.go`:
 
 ```go
-// In cmd/blowerboo/main.go
+// В cmd/blowerboo/main.go
 import "github.com/blowerboo/blowerboo/internal/providers/kling"
 
 registry.Register(kling.New(os.Getenv("KLING_API_KEY")))
 ```
 
-The adapter handles translating `ExecutionPayload` into Kling's native request
-format. Nothing else in the pipeline needs to change.
+Адаптер отвечает за преобразование `ExecutionPayload` в нативный формат запросов Kling.
+Остальной пайплайн менять не нужно.
 
 ---
 
-## Future Roadmap
+## Дорожная карта
 
-- [ ] Real LLM-backed Spec Agent (Anthropic Claude)
-- [ ] Real LLM-backed Planner Agent
-- [ ] Kling video adapter
-- [ ] Runway video adapter
-- [ ] Midjourney image adapter
-- [ ] Leonardo image adapter
-- [ ] Higgsfield adapter
-- [ ] Flux adapter
-- [ ] Stable Diffusion (local) adapter
-- [ ] Async job polling loop
-- [ ] Project state persistence to JSON files in `./projects/`
-- [ ] HTTP API mode (serve the pipeline over REST)
-- [ ] Web UI for reviewing specs and shots before executing
-- [ ] Cost estimation before submission
-- [ ] Reference image upload support
-- [ ] Batch mode (multiple prompts from a file)
-- [ ] Critic Agent (review and score generated assets)
-- [ ] Versioned spec files
-- [ ] Prompt template library
-- [ ] Image/video analysis for iterative refinement
+- [ ] Реальный Spec Agent на LLM (Anthropic Claude)
+- [ ] Реальный Planner Agent на LLM
+- [ ] Адаптер Kling для видео
+- [ ] Адаптер Runway для видео
+- [ ] Адаптер Midjourney для изображений
+- [ ] Адаптер Leonardo для изображений
+- [ ] Адаптер Higgsfield
+- [ ] Адаптер Flux
+- [ ] Адаптер Stable Diffusion (локально)
+- [ ] Асинхронный цикл опроса статусов задач
+- [ ] Сохранение состояния Project в JSON-файлы в `./projects/`
+- [ ] HTTP API-режим (доступ к пайплайну по REST)
+- [ ] Web UI для просмотра спецификаций и шотов перед отправкой
+- [ ] Оценка стоимости до отправки
+- [ ] Поддержка загрузки референс-изображений
+- [ ] Batch-режим (несколько промптов из файла)
+- [ ] Critic Agent (проверка и оценка сгенерированных ассетов)
+- [ ] Версионирование spec-файлов
+- [ ] Библиотека шаблонов промптов
+- [ ] Анализ изображений/видео для итеративного улучшения
 
 ---
 
-## Possible Integrations
+## Возможные интеграции
 
-| Provider | Type | Notes |
+| Провайдер | Тип | Примечания |
 |---|---|---|
-| Kling | Video | Strong motion, Chinese provider |
-| Runway Gen-3 | Video | Industry standard |
-| Midjourney | Image | Best aesthetic quality |
-| Leonardo.Ai | Image | Fast, good for storyboards |
-| Higgsfield | Video | Character-consistent generation |
-| Flux | Image | Open weights, fast inference |
-| Stable Diffusion | Image | Self-hosted option |
-| Luma Dream Machine | Video | Photorealistic video |
-| Pika Labs | Video | Motion control |
-| ElevenLabs | Audio | Voiceover for video shots |
-| Anthropic Claude | LLM | Spec + Planner agents |
-| OpenAI GPT-4o | LLM | Alternate LLM backend |
+| Kling | Видео | Сильная работа с движением, китайский провайдер |
+| Runway Gen-3 | Видео | Индустриальный стандарт |
+| Midjourney | Изображения | Лучшее визуальное качество |
+| Leonardo.Ai | Изображения | Быстро, хорошо для раскадровок |
+| Higgsfield | Видео | Генерация с консистентностью персонажей |
+| Flux | Изображения | Открытые веса, быстрый инференс |
+| Stable Diffusion | Изображения | Вариант self-hosted |
+| Luma Dream Machine | Видео | Фотореалистичное видео |
+| Pika Labs | Видео | Управление движением |
+| ElevenLabs | Аудио | Озвучка для видеошотов |
+| Anthropic Claude | LLM | Spec + Planner агенты |
+| OpenAI GPT-4o | LLM | Альтернативный LLM-бэкенд |
 
 ---
 
-## Contributing
+## Вклад в проект
 
-Keep it simple. See `.github/copilot-instructions.md` for the design rules.
+Держите проект простым. Правила дизайна и архитектуры: `.github/copilot-instructions.md`.
