@@ -1,0 +1,35 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+dist/
+tmp/
+
+# Go test artifacts
+*.test
+*.out
+coverage.html
+
+# Environment secrets
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project runtime output
+projects/*/output/
+projects/**/*.generated.*
+
+# Dependency vendor (use Go modules)
+vendor/
